@@ -19,7 +19,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <gdbm.h>
-
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <errno.h>
 
 extern void *my_fatal ();
@@ -146,8 +147,8 @@ main (argc, argv)
 	{"pdgmfilepath", required_argument, 0, 'p'},
 	{"uwordpath", required_argument, 0, 'u'},
 	{"dictfilepath", required_argument, 0, 'd'},
-	{"inputfile", required_argument, 0, 'i'},
-	{"outputfile", required_argument, 0, 'o'},
+	//{"inputfile", required_argument, 0, 'i'},
+	//{"outputfile", required_argument, 0, 'o'},
 	{0, 0, 0, 0}
       };
       int option_index = 0;
@@ -184,6 +185,7 @@ main (argc, argv)
 	case 'U':
 	  swit1 = 0;
 	  break;
+#if 0
     case 'i':
 	      infile = optarg;
          strcpy (iname, infile);
@@ -204,10 +206,7 @@ main (argc, argv)
 			//} else 
 			//	PRINT_LOG (log_file, "OutputFile opened Sucessfully\n"); 
 		break;
-
-																																													  
-
-	  
+#endif
 /* OPTION 'F' is used for user friendly output */
 	case 'F':
 	  FOR_USER = 1;
@@ -251,7 +250,7 @@ main (argc, argv)
 	}
     }
 
-	sprintf(log_messg, "INFO: Entering Aplication with inputfile=%s, outputfile=%s", iname, outfile); PRINT_LOG (log_file, log_messg);
+	//sprintf(log_messg, "INFO: Entering Aplication with inputfile=%s, outputfile=%s", iname, outfile); PRINT_LOG (log_file, log_messg);
 
   if (argc > 4)			/* argument is less than 3 */
     DEBUG_NEW = argv[4][0] - '0';
@@ -386,15 +385,48 @@ main (argc, argv)
     if ((!HORI_OUTPUT) && !YES_NO)	/* HORI_OUTPUT AND YES_NO are not true */
       printf ("# s%d/n", SENT_NUM);
 	sprintf(log_messg, "INFO: Opened GDBM database files needed to run morph"); PRINT_LOG(log_file, log_messg);
-	   
+
+    int listenfd,connfd,morph_in_size, morph_out_size;
+    struct sockaddr_in servaddr,cliaddr;
+    socklen_t clilen;
+    pid_t     childpid;
+    char mesg[10240];
+
+    listenfd=socket(AF_INET,SOCK_STREAM,0);
+
+    bzero(&servaddr,sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+    servaddr.sin_port=htons(52000);
+    if (bind(listenfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) == -1) {
+        perror("bind");
+        exit(-1);
+    }
+
+    listen(listenfd,1024);
+    char tmp_name[] = "/tmp/fileXXXXXX";
+    int fd;
+    for(;;)
+    {
+        clilen=sizeof(cliaddr);
+        connfd = accept(listenfd,(struct sockaddr *)&cliaddr,&clilen);
+
+        if ((childpid = fork()) == 0)
+        {
+            close (listenfd);
+
 	while (1) {			/* while word is there */
+          morph_in_size = recvfrom(connfd,mesg,102400,0,(struct sockaddr *)&cliaddr,&clilen);
 	  /* Reads the input using API code*/
-	  	int var;
+          fd = mkstemp(tmp_name);
+          write(fd, mesg, morph_in_size);
+          close(fd);
+		int var;
 		sprintf(log_messg, "INFO: Going to read input file using SSF API"); PRINT_LOG(log_file, log_messg);
-		
+
 	  data_str = create_tree ();
 		sprintf(log_messg, "INFO: SSF Input File is |%s|", iname); PRINT_LOG(log_file, log_messg);
-	  read_ssf_from_file (data_str, iname);
+	  read_ssf_from_file (data_str, tmp_name);
 		sprintf(log_messg, "INFO: Child count is |%d|", data_str->child_count); PRINT_LOG(log_file, log_messg);
 
 	  for (var = 0; var < data_str->child_count; var++) {
@@ -663,15 +695,20 @@ main (argc, argv)
 			
 		  //delete_node (get_nth_child(data_str, data_str->child_count - 1));
 		  //print_tree (data_str);
-		  print_tree_to_file(data_str, outfile);
+		  print_tree_to_file(data_str, tmp_name);
 		  //fun_close (fpt1, fp_pdgm, swit1, DBM_FLAG, db_dict, db_suff);
 		  fun_close (fp_pdgm, swit1, DBM_FLAG, db_dict, db_suff);
 
 		sprintf(log_messg, "INFO: OUT of for"); PRINT_LOG(log_file, log_messg);
+                fd = open(tmp_name, O_RDONLY);
+                morph_out_size = read(fd, mesg, 102400);
+                sendto(connfd,mesg,morph_out_size,0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
+                unlink(tmp_name);
 		exit(0);
-//	}
+	}
 	sprintf(log_messg, "INFO: OUT of else"); PRINT_LOG(log_file, log_messg);
     }
+        close(connfd);
 	sprintf(log_messg, "INFO: END OF WHILE"); PRINT_LOG(log_file, log_messg);
-
+  }
 }

@@ -49,7 +49,7 @@ int swit,DBM_FLAG;     /* switch and database manager flag */
                 gdbm_close(db2);
 	      }
         fclose(fp_suff);
-        exit(1);
+//        exit(1);
 }
 
 
