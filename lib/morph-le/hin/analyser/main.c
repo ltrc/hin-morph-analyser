@@ -403,6 +403,9 @@ main (argc, argv)
         exit(-1);
     }
 
+    /* Don't care what the child returns */
+    signal(SIGCHLD, SIG_IGN);
+
     listen(listenfd,1024);
     char tmp_name[] = "/tmp/fileXXXXXX";
     int fd;
