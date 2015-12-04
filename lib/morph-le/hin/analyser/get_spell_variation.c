@@ -281,7 +281,7 @@ void replace(char *str_ins_M,char ch,char *pat)
 
 int M_pattern_insert(char orig[LEN],char words[RULE][LEN],int word_count)
 {
-	int loop1;
+	//int loop1;
 	char *str_ins_M;
 	
 	str_ins_M=(char *)malloc((strlen(orig)+1)*sizeof(char));
@@ -300,14 +300,14 @@ int M_pattern_insert(char orig[LEN],char words[RULE][LEN],int word_count)
 }
 
 extern void fun_morph();
-char get_spell_variation(orig,words,word_count)
+void get_spell_variation(orig,words,word_count)
 char orig[LEN];
 char words[RULE][LEN];
 int word_count;
 {
-	int loop1,loop2,test_eof;
-	char sort[RULE],morph_path[LEN],cmd[BIGGER_LEN],cmd1[BIGGER_LEN];
-	FILE *file,*file_orig;
+	int loop1,loop2; //,test_eof;
+	char sort[RULE]; //,morph_path[LEN],cmd[BIGGER_LEN],cmd1[BIGGER_LEN];
+	//FILE *file,*file_orig;
         PRINT_LOG(log_file, "This is get_spell_variation()\n");
 	
 	 word_count=0;
@@ -351,5 +351,5 @@ int word_count;
 	fclose(file);
 	fclose(file_orig); */
 
-return (words);  /*returns the word after Spell variaton is performed*/
+//return (words);  /*returns the word after Spell variaton is performed*/
 }
