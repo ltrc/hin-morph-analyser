@@ -24,10 +24,21 @@
 
 extern char *program_name;
 extern FILE *log_file;
+extern int match_in_dict();
 
 #define FUNCTION "verify_root()"
 
-verify_root(INFLTNL,guessed_root,pdgm,cat,offset,ans_table,ans_ar,j,DBM_FLAG,db)
+void test_hypothetical_dict(root,pdgm,cat,suff_offset,ans_ar,j,DBM_FLAG,db)
+   /* root word, paradigm,category */
+   char root[SUFFWORDSIZE],pdgm[WORD_SIZE],cat[CATEGORYWORDSIZE];
+   int suff_offset,*j;   /* suffix offset case */
+   struct ans_struct ans_ar[Arraysize];   /* ans_struct structure object, this structure
+                                           contains root,offset,auxilary verb and paradigm */
+   int DBM_FLAG; 			     /* global dictionary flag */
+   GDBM_FILE db;                         /* GNU database manager includes dbm and ndb                                                        compatability and db is used for opening file */
+ {}
+
+void verify_root(INFLTNL,guessed_root,pdgm,cat,offset,ans_table,ans_ar,j,DBM_FLAG,db)
 
   int INFLTNL;
   /* guessed root, paradigm, category */
@@ -49,13 +60,3 @@ verify_root(INFLTNL,guessed_root,pdgm,cat,offset,ans_table,ans_ar,j,DBM_FLAG,db)
 	if(!match1)
 	   test_hypothetical_dict(guessed_root,pdgm,cat,offset,ans_ar,j,DBM_FLAG,db);
     }
-
-   test_hypothetical_dict(root,pdgm,cat,suff_offset,ans_ar,j,DBM_FLAG,db)
-      /* root word, paradigm,category */
-      char root[SUFFWORDSIZE],pdgm[WORD_SIZE],cat[CATEGORYWORDSIZE];
-      int suff_offset,*j;   /* suffix offset case */
-      struct ans_struct ans_ar[Arraysize];   /* ans_struct structure object, this structure
-                                              contains root,offset,auxilary verb and paradigm */
-      int DBM_FLAG; 			     /* global dictionary flag */
-      GDBM_FILE db;                         /* GNU database manager includes dbm and ndb                                                        compatability and db is used for opening file */
-    {}
