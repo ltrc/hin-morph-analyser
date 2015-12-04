@@ -22,6 +22,7 @@
 extern char *program_name;
 extern FILE *log_file;
 extern char *log_messg;
+extern void cp_suff_add_struct();
 
 #define FUNCTION "fun_morph()"
 
@@ -52,7 +53,7 @@ extern void get_paradigm();
 extern void get_pdgm_info();
 extern void get_suff();
 extern void get_suff_info();
-extern char *dbm_suff_tab_lookup();
+extern int dbm_suff_tab_lookup();
 extern void *my_blk_bsearch();
 extern void prop_noun_dict_lookup();
 extern void cp_to_struct();
@@ -83,15 +84,16 @@ struct ans_struct ans_ar[SmallArray]; /* ans_struct structure ,it contains of ro
 	char ans_ar1[SmallArray][LargeArray];  /* ans_ar1 is lexical morph word */
 	char tmp_wrd[SUFFWORDSIZE];    /*temp suff */
 	struct lex_info  ans_table[SmallArray];    /* gives lexical info of input word */
-	char *tag_suff;    /* tag suffix */
+	char *tag_suff = NULL;    /* tag suffix */
 	struct suff_add_info tag_suff_ar[Arraysize],dummy;
-	int sizeof_dummy;    /* intial size of suffix */
+	//int sizeof_dummy;    /* intial size of suffix */
 	int AVY_srch();
+        int is_in_db = 0;
         PRINT_LOG(log_file, "This is fun_morph()\n");
 	
 	sprintf(log_messg, "INFO: fun_morph"); PRINT_LOG(log_file, log_messg);
 	pos = 0;
-	sizeof_dummy = sizeof(dummy);
+	//sizeof_dummy = sizeof(dummy);
 
 	/* intializing root,pdgm,cat to null */
 	for(loop1=0;loop1<Arraysize;loop1++)  
@@ -146,8 +148,8 @@ struct ans_struct ans_ar[SmallArray]; /* ans_struct structure ,it contains of ro
 					strcpy(suff,"0");
                                         /* This function checks the suffix word is
                                         present in the suff file */
-					tag_suff =  dbm_suff_tab_lookup(suff,db_suff); 
-					sprintf(log_messg, "INFO: Looking into Suffix table|suff=%s|db_suff=%s|tag_suff=%s|", \
+					is_in_db = dbm_suff_tab_lookup(suff,db_suff, tag_suff_ar);
+					sprintf(log_messg, "INFO: Looking into Suffix table|suff=%s|db_suff=%p|tag_suff=%s|", \
 						suff, db_suff, tag_suff); PRINT_LOG(log_file, log_messg);
 				      if(!strcmp(suff,"0")) /* compares  for suff value with 0 and executes only when false */
                                           strcpy(suff,"");
@@ -173,7 +175,7 @@ struct ans_struct ans_ar[SmallArray]; /* ans_struct structure ,it contains of ro
 				} /* if(tag_suff!='\0') */
 				loop2=0;
 						  /* checks for loop1>0 */
-				          if(loop1>0) {
+				          if(loop1>0 || is_in_db) {
 					       strcpy(tmp_suff,tag_suff_ar[loop2].suff);
 					/*executes only when suff and tmp_sff are not same */
 				while(!strcmp(tmp_suff,suff)) {

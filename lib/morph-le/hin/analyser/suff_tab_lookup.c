@@ -29,11 +29,12 @@ extern FILE *log_file;
 
 extern void suff_build_struct();
 
-char *dbm_suff_tab_lookup(word,db)
+int dbm_suff_tab_lookup(word,db, ans_array)
 
 char word[SUFFWORDSIZE];   /* morph word */
 GDBM_FILE db;              /* GNU database manager includes dbm and ndb compatability and
                                db is used for opening file */
+struct suff_add_info ans_array[SmallArray];
 
   {
     datum db_tag,db_out;   /* datum is function of gdbm , db_tag is key and db_out is content */
@@ -46,7 +47,7 @@ GDBM_FILE db;              /* GNU database manager includes dbm and ndb compatab
     //char ans_ar1[100];       /* answer array */
 
 // Compile issue solved in Ubuntu-32,64 bit and CentOS-32,64 bit and Fedora-32,64 etc.
-   struct suff_add_info ans_ar1[100];
+   //struct suff_add_info ans_ar1[100];
 
     PRINT_LOG(log_file, "checking for the suffix word in the suff file\n");
    
@@ -73,8 +74,9 @@ GDBM_FILE db;              /* GNU database manager includes dbm and ndb compatab
         }
       else
          ans_ar[0][0] = '\0';
-      suff_build_struct(word,ans_ar,ans_ar1);
+      suff_build_struct(word,ans_ar,ans_array);
  /*This function creates a specfic structure for the rootword,priority pdgm and
    category. it copies the required data from the dictionary*/
-  return ans_ar1;  //returns the morph word 
+  //return ans_ar1;  //returns the morph word
+  return db_out.dsize;
   }
