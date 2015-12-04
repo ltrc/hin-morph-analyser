@@ -25,6 +25,7 @@ extern char *log_messg;
 #define FUNCTION "Avy_srch()"
 extern int sizeof_ind;		/* table size */
 extern char indword[][AVYWORDSIZE];	/* table start address */
+extern void *my_bsearch();
 
 /**
  * Prototypes of the functions in this file with a file scope
