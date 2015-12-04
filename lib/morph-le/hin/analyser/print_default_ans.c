@@ -15,7 +15,7 @@
 
 extern void resufun();
 
-void *print_default_ans(char *word)
+void print_default_ans(char *word)
 
    {
      int offset;
