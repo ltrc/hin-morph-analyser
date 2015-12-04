@@ -18,7 +18,7 @@
 
 extern FILE *log_file;
 
-void *my_fatal(char fpt[100])
+void my_fatal(char fpt[100])
    {
 	if(!fpt)        /* fpt is not true */
           {

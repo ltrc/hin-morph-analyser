@@ -22,8 +22,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <errno.h>
+#include <ctype.h>
 
-extern void *my_fatal ();
+extern void my_fatal ();
 
 #include "struct1.h"
 #include "glbl.h"
@@ -41,7 +42,10 @@ int DEFAULT_PARADIGM;		/* for choosing default paradigm if it is not
 				   present in the dict */
 int ALWAYS_DEFAULT_PARADIGM;	/*  always choose the default paradigm ,
 				   even though entry is found in dict */
-				   
+
+int TCP_SERVER_FLAG;            /* create a fork()-ing TCP server */
+int TCP_SERVER_PORT;            /* port number for TCP Server to bind() on */
+
 char *log_messg;	/*test var----*/
 
 int WORD_NUM;			/* for assigning word number */
@@ -73,17 +77,21 @@ extern char fun_read ();
 extern int snt_num ();
 extern int end_mark ();
 extern void print_snt_num ();
-extern char get_spell_variation();
+extern void get_spell_variation();
 extern void prnt_spell_variation();
 node *data_str;
 
 #define FUNCTION "main()"
+
+#define TCP_SERVER_MAX_QUEUE_LENGTH 256
+#define TCP_SERVER_MAX_BUFFER_SIZE 10240
+
 int
 main (argc, argv)
      int argc;
      char *argv[];
 {
-  FILE *fpt1;			/* File pointer for uword */
+  FILE *fpt1 = NULL;		/* File pointer for uword */
   FILE *fp_pdgm;		/* File pointer for pdgm_offset_info */
   FILE *fp_prop_noun_dict;	/* File pointer for prop_noun_lex.dic */
   FILE *fp_uword_dict;		/* File pointer for uword.dic */
@@ -96,7 +104,7 @@ main (argc, argv)
   char fpath[BigArray], fname[BigArray], fpath_dict[BigArray];
   char upath[BigArray], uname[BigArray], ename[BigArray], lname[BigArray];	/* uword path, uword name */
   char line[SmallArray];
-  int loop1, swit1, c, k, flag_uword, first = 1, pipe_flag, FLAG=0;
+  int loop1, swit1, c, k, flag_uword, FLAG=0; //,first = 1, pipe_flag;
   struct ans_struct ans_ar[Arraysize];
   /* lexical info of word , ie word,rootword, pdgm,cat */
   char uword_ans[BigArray];	/* uword ans */
@@ -108,17 +116,15 @@ main (argc, argv)
   extern FILE *stdin;
   extern FILE *stdout;
 
- char root[BigArray], cat[BigArray], g[BigArray], 
- 		n[BigArray], p[BigArray], kase[BigArray], 
-		cm[BigArray], tam[BigArray];
-																								 
-		 
+ //char root[BigArray], cat[BigArray], g[BigArray],
+ //		n[BigArray], p[BigArray], kase[BigArray],
+ //		cm[BigArray], tam[BigArray];
 
   int sizeof_uword;		/* size of uword */
   struct uword_dict uword_ar[Uwordlen];
   char morph_spell_variation[SmallArray][SmallArray];	/* morph word */
   int word_count = 0;		/* word count */
-  char w;
+  //char w;
   char final_feature_struct[LargeArray];
 
 /* intialising variables */
@@ -136,6 +142,10 @@ main (argc, argv)
   HORI_OUTPUT = 0;
   YES_NO = 0;
   INFLTNL = 1;
+  TCP_SERVER_FLAG = 0;
+
+  infile = NULL;
+  outfile = NULL;
 /* [ESC] increase size 1024 from 256 to handle segmentation fault issue if fs > 8  */
   log_messg = (char*) malloc(sizeof(char)*1024); 
   memset(log_messg, '\0', 1024);
@@ -147,13 +157,14 @@ main (argc, argv)
 	{"pdgmfilepath", required_argument, 0, 'p'},
 	{"uwordpath", required_argument, 0, 'u'},
 	{"dictfilepath", required_argument, 0, 'd'},
-	//{"inputfile", required_argument, 0, 'i'},
-	//{"outputfile", required_argument, 0, 'o'},
+	{"inputfile", required_argument, 0, 'i'},
+	{"outputfile", required_argument, 0, 'o'},
+        {"tcpserver", required_argument, 0, 'x'},
 	{0, 0, 0, 0}
       };
       int option_index = 0;
 
-      k = getopt_long (argc, argv, "fpudioUFPADLHWGY",
+      k = getopt_long (argc, argv, "fpudioxUFPADLHWGY",
 		       long_options, &option_index);
       if (k == -1)
 	break;
@@ -176,7 +187,7 @@ main (argc, argv)
 /* OPTION 'u' for uword dict path */
 	case 'u':
 	  uword = optarg;
-	  break;
+          break;
 /* OPTION 'd' for dictpath */
 	case 'd':
 	  dict = optarg;
@@ -185,28 +196,30 @@ main (argc, argv)
 	case 'U':
 	  swit1 = 0;
 	  break;
-#if 0
-    case 'i':
-	      infile = optarg;
-         strcpy (iname, infile);
-         if ((stdin = fopen (iname, "r")) == NULL) {
-		 	sprintf(log_messg, "ERROR: Could not open |%s| file\n", iname); 
-            PRINT_LOG (log_file, log_messg); 
-			exit (0); 
-		} else 
-			PRINT_LOG (log_file, "InputFile opened Sucessfully\n");
-		break;
-/* OPTION o for output file */ 
-		case 'o': 
-			outfile = optarg; 
-			//strcpy (oname, outfile); 
-			//if ((stdout = fopen (oname, "w")) == NULL) { 
-			 //	sprintf(log_messg, "ERROR: Could not open |%s| file\n", oname); PRINT_LOG (log_file, log_messg); 
-			//	exit (0); 
-			//} else 
-			//	PRINT_LOG (log_file, "OutputFile opened Sucessfully\n"); 
-		break;
-#endif
+        case 'x':
+          TCP_SERVER_FLAG = 1;
+          TCP_SERVER_PORT = atoi(optarg);
+          break;
+        case 'i':
+          infile = optarg;
+          strcpy (iname, infile);
+          if ((stdin = fopen (iname, "r")) == NULL) {
+              sprintf(log_messg, "ERROR: Could not open |%s| file\n", iname);
+              PRINT_LOG (log_file, log_messg);
+              exit (0);
+          } else
+              PRINT_LOG (log_file, "InputFile opened Sucessfully\n");
+          break;
+          /* OPTION o for output file */
+        case 'o':
+          outfile = optarg;
+          strcpy (oname, outfile);
+          if ((stdout = fopen (oname, "w")) == NULL) {
+              sprintf(log_messg, "ERROR: Could not open |%s| file\n", oname); PRINT_LOG (log_file, log_messg);
+              exit (0);
+          } else
+              PRINT_LOG (log_file, "OutputFile opened Sucessfully\n");
+          break;
 /* OPTION 'F' is used for user friendly output */
 	case 'F':
 	  FOR_USER = 1;
@@ -250,7 +263,15 @@ main (argc, argv)
 	}
     }
 
-	//sprintf(log_messg, "INFO: Entering Aplication with inputfile=%s, outputfile=%s", iname, outfile); PRINT_LOG (log_file, log_messg);
+  if (!TCP_SERVER_FLAG && (!infile || !outfile)) {
+      printf("Please specify either inputfile and outputfile or tcpserver\n");
+      exit(-1);
+  }
+
+  if (infile && outfile) {
+      sprintf(log_messg, "INFO: Entering Aplication with inputfile=%s, outputfile=%s", iname, outfile); PRINT_LOG (log_file, log_messg);
+  }
+
 
   if (argc > 4)			/* argument is less than 3 */
     DEBUG_NEW = argv[4][0] - '0';
@@ -368,17 +389,17 @@ main (argc, argv)
       strcpy (fname, fpath_dict);
       /* my_fatal: This function displays a message  "File not found"
          when the files dict_final,suff are not there */
-      db_dict = gdbm_open (fname, 512, GDBM_READER, 0666, my_fatal (fname));
+      db_dict = gdbm_open (fname, 512, GDBM_READER, 0666, my_fatal);
       strcpy (fname, fpath);
       strcat (fname, "/suff");
       /* my_fatal: This function displays a message  "File not found"
          when the files dict_final,suff are not there */
-      db_suff = gdbm_open (fname, 512, GDBM_READER, 0666, my_fatal (fname));
+      db_suff = gdbm_open (fname, 512, GDBM_READER, 0666, my_fatal);
       strcpy (fname, fpath);
       strcat (fname, "/uword.dbm");
       /* my_fatal: This function displays a message  "File not found"
          when the files dict_final,suff are not there */
-      db_uword = gdbm_open (fname, 512, GDBM_READER, 0666, my_fatal (fname));
+      db_uword = gdbm_open (fname, 512, GDBM_READER, 0666, my_fatal);
     }
   SENT_NUM++;
   if (LINE_NUM_FLAG == 0)	/* check for LINE_NUM_FLAG is 0 */
@@ -388,330 +409,351 @@ main (argc, argv)
 
     int listenfd,connfd,morph_in_size, morph_out_size;
     struct sockaddr_in servaddr,cliaddr;
-    socklen_t clilen;
-    pid_t     childpid;
-    char mesg[10240];
-
-    listenfd=socket(AF_INET,SOCK_STREAM,0);
-
-    bzero(&servaddr,sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
-    servaddr.sin_port=htons(52000);
-    if (bind(listenfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) == -1) {
-        perror("bind");
-        exit(-1);
-    }
-
-    /* Don't care what the child returns */
-    signal(SIGCHLD, SIG_IGN);
-
-    listen(listenfd,1024);
-    char tmp_name[] = "/tmp/fileXXXXXX";
+    char mesg[TCP_SERVER_MAX_BUFFER_SIZE];
+    char tmp_name[SmallArray] = "/tmp/fileXXXXXX";
     int fd;
-    for(;;)
-    {
-        clilen=sizeof(cliaddr);
-        connfd = accept(listenfd,(struct sockaddr *)&cliaddr,&clilen);
+    socklen_t clilen;
+    pid_t childpid = 0;
+    if (TCP_SERVER_FLAG) {
+        listenfd=socket(AF_INET,SOCK_STREAM,0);
 
-        if ((childpid = fork()) == 0)
-        {
-            close (listenfd);
+        bzero(&servaddr,sizeof(servaddr));
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        servaddr.sin_port=htons(TCP_SERVER_PORT);
+        if (bind(listenfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) == -1) {
+            perror("bind");
+            exit(-1);
+        }
 
-	while (1) {			/* while word is there */
-          morph_in_size = recvfrom(connfd,mesg,102400,0,(struct sockaddr *)&cliaddr,&clilen);
-	  /* Reads the input using API code*/
-          fd = mkstemp(tmp_name);
-          write(fd, mesg, morph_in_size);
-          close(fd);
-		int var;
-		sprintf(log_messg, "INFO: Going to read input file using SSF API"); PRINT_LOG(log_file, log_messg);
+        /* Don't care what the child returns */
+        signal(SIGCHLD, SIG_IGN);
 
-	  data_str = create_tree ();
-		sprintf(log_messg, "INFO: SSF Input File is |%s|", iname); PRINT_LOG(log_file, log_messg);
-	  read_ssf_from_file (data_str, tmp_name);
-		sprintf(log_messg, "INFO: Child count is |%d|", data_str->child_count); PRINT_LOG(log_file, log_messg);
+        if (listen(listenfd, TCP_SERVER_MAX_QUEUE_LENGTH) == -1) {
+            perror("listen");
+            exit(errno);
+        }
+    }
+    for (;;) {
+        if (TCP_SERVER_FLAG) {
+            clilen=sizeof(cliaddr);
+            connfd = accept(listenfd,(struct sockaddr *)&cliaddr,&clilen);
+            if (connfd < 0) {
+                perror("accept");
+                exit(errno);
+            }
+            childpid = fork();
+            if (childpid < 0) {
+                perror("fork");
+                exit(-1);
+            }
+        }
+        if (childpid == 0) { /* Either inside child() or when !TCP_SERVER_FLAG */
+            if(TCP_SERVER_FLAG) {
+                close (listenfd);
 
-	  for (var = 0; var < data_str->child_count; var++) {
-	      char feature_str[BiggerArray];
-	      feature_str[0] = '\0';
-		  // [ESC] --- no check for return from function
-	      node *child = get_nth_child (data_str, var);
+                morph_in_size = recvfrom(connfd, mesg, TCP_SERVER_MAX_BUFFER_SIZE, 0, (struct sockaddr *)&cliaddr, &clilen);
 
-	      /* this function reads the input word */
-		sprintf(log_messg, "INFO: Going to call fun_read()"); PRINT_LOG(log_file, log_messg);
-	      c = fun_read(morph, get_field(child, 1));
-		sprintf(log_messg, "INFO: Returned from fun_read(), c = |%d| count=%d|word=%s|\n", c, var, morph); PRINT_LOG(log_file, log_messg);
+                fd = mkstemp(tmp_name);
+                write(fd, mesg, morph_in_size);
+                close(fd);
 
-		  /* checks for morph is null or not */
-	      if (strcmp(morph, "\0"))	{
-			sprintf(log_messg, "INFO: Input word is |%s|", morph); PRINT_LOG(log_file, log_messg);
-		  FINDONCE = 0;
-		  /* checks fo r line no. , snt no., and o/p are there or not */
-		  if ((LINE_NUM_FLAG && snt_num (morph)) && (!HORI_OUTPUT)
-		      && (!YES_NO))
-		    /* snt_num() This function marks a sentence number to the word */
-		    print_snt_num (morph);
-		  else		/* checks fo r line no. , snt no., and o/p are there  */
-		    {
-		      WORD_NUM++;
-		      if (FOR_USER && !HORI_OUTPUT)	/* o/p is not there */
-			printf ("@input_word@\n word_num: w%d\n", WORD_NUM);
-		      else
-			/* if answer is not there and hori_output is not there */
-		      if (!HORI_OUTPUT && !YES_NO)
-			printf ("input_word\nw%d\n", WORD_NUM);
-		      if ((morph[0] == '@') || (LINE_NUM_FLAG && end_mark (morph)))	/* morph= @ */
-			{
-			  if (!HORI_OUTPUT)	/*checks for output not there */
-			    printf ("AVY\n%s\n", morph);	/* print the marked words as they are */
-			  else
-			    printf ("%s", morph);	/* print the marked words as they are */
-			}
-		      else
-			{
-			  /* This function checks the Unkown word is present in the UDictionary or not */
-			  chk_uword_dict(morph, uword_ar->sl_word, sizeof_uword, 
-			  					sizeof (uword_ar[0]), strcmp, 
-								uword_ans, DBM_FLAG, db_uword);
-			  /* checks for uword not null and uword_dict is there */
-			  if ((uword_ans[0] != '\0') && (UWORD_DICT))
-			    if (!HORI_OUTPUT && !YES_NO)	/* checks output and answer not there */
-			      printf ("AVY\n%s\n", uword_ans);
-			    else if (YES_NO)	/* if answer is there */
-			      printf ("%s", morph);
-			    else	/* if answer is not there */
-			      printf ("%s", uword_ans);
-			  else
-			    {
-			      /* This function is the main functuon. It extracts suffixes and calls different routines for
-			         analysis */
-				sprintf(log_messg, "INFO: Calling fun_morph() for the word |%s|", morph); PRINT_LOG(log_file, log_messg);
-				fun_morph (morph, swit1, fpt1, fp_pdgm, DBM_FLAG, db_dict, db_suff, ans_ar);
-				loop1=0;
-				//[ESC] This is creating segmentation fault on big files
-				//sprintf(log_messg, "INFO: fun_morph() returned |%d|%s|%d|%s|", loop1, ans_ar[loop1].root, ans_ar[var].offset, ans_ar[var].pdgm); PRINT_LOG(log_file, log_messg);
+                sprintf(fname, "%s/pdgm_offset_info", fpath);
+                /* each child should've it's own FILE * to avoid race conditions */
+                if (!(fp_pdgm = fopen (fname, "r"))) {
+                    exit (errno);
+                }
+            }
+            //sprintf(log_messg, "Going to read input file |%s| using SSF API", iname); PRINT_LOG(log_file, log_messg);
+            data_str = create_tree ();
+            sprintf(log_messg, "INFO: SSF Input File is |%s|", iname); PRINT_LOG(log_file, log_messg);
+            read_ssf_from_file(data_str, TCP_SERVER_FLAG ? tmp_name : iname);
+            sprintf(log_messg, "INFO: Child count is |%d|", data_str->child_count); PRINT_LOG(log_file, log_messg);
 
-				  /* if offest is equal to -2 for UNKNOWN Word*/
-			      if (ans_ar[0].offset == -2)	{
-				  if (YES_NO)	/* checks for ajFAwa */
-				    printf ("%s<ajFAwa>", morph);
-					get_spell_variation(morph,morph_spell_variation,word_count);
-					flag_uword=1;
-					for(loop1=0;loop1<=word_count;loop1++) {
-						fun_morph(morph_spell_variation[loop1],swit1,fpt1,fp_pdgm,
-								DBM_FLAG,db_dict,db_suff,ans_ar);
-						prnt_spell_variation(morph_spell_variation[loop1],ans_ar, 
-									feature_str);
-						if(ans_ar[0].offset != -2) {
-							flag_uword=0;
-						}
-					}
-					sprintf(final_feature_struct, "%s", feature_str);	
+            int var;
+            for (var = 0; var < data_str->child_count; var++) {
+                char feature_str[BiggerArray];
+                feature_str[0] = '\0';
+                // [ESC] --- no check for return from function
+                node *child = get_nth_child (data_str, var);
 
-	 				if ((swit1 == 0) && (flag_uword))
-					{
-						
-						if ((fp_excepword_dict = fopen (ename, "r")) == NULL)    {
-                                                	sprintf(log_messg, "ERROR in opening exception_words file |%s| please specify the correct path", ename);
-                                                	PRINT_ERR(log_file, log_messg);
-                                                	exit (errno);
-                                        	} else {
-                                                	sprintf(log_messg, "exception_words file |%s| opened Sucessfully", ename); 
-							PRINT_LOG(log_file, log_messg);
-                                        	}
-						
-						fgetword(fp_excepword_dict,line,':');
-						while (strcmp (line, ""))       /* compares line with " " */
-                                        	{
-                                                	FLAG=0;
-                                                	if(strcmp(line,morph)==0)
-                                                	{
-                                                        	fgetword(fp_excepword_dict,line,':');
-                                                        	sprintf(final_feature_struct, "<fs %s>", line);
-                                                        	FLAG=1;
-                                                        	break;
-                                                	}
-                                                	else
-                                                        	fgetword(fp_excepword_dict,line,':');
-                                                	fgetword(fp_excepword_dict,line,':');
-                                        	}
-						if(FLAG==0)
-							sprintf(final_feature_struct, "<fs af='%s,unk,,,,,,'>", morph);
-					}
-				}
+                /* this function reads the input word */
+                sprintf(log_messg, "INFO: Going to call fun_read()"); PRINT_LOG(log_file, log_messg);
+                c = fun_read(morph, get_field(child, 1));
+                sprintf(log_messg, "INFO: Returned from fun_read(), c = |%d| count=%d|word=%s|\n", c, var, morph); PRINT_LOG(log_file, log_messg);
 
-			      else	/* checks for morph is there */
-				{
-				  if (YES_NO)	/* checks for answer is true */
-				    printf ("%s", morph);
-				  else	/* if answer is not there */
-				    {
-				      loop1 = 0;
-					  /* checks for offset is not eual to -2 */
-				      while (ans_ar[loop1].offset != -2) {
-				sprintf(log_messg, "INFO: Reading Analysis for word |%s|, analysis#=%d", ans_ar[loop1].root, loop1); PRINT_LOG(log_file, log_messg);
+                /* checks for morph is null or not */
+                if (strcmp(morph, "\0"))	{
+                    sprintf(log_messg, "INFO: Input word is |%s|", morph); PRINT_LOG(log_file, log_messg);
+                    FINDONCE = 0;
+                    /* checks fo r line no. , snt no., and o/p are there or not */
+                    if ((LINE_NUM_FLAG && snt_num (morph)) && (!HORI_OUTPUT)
+                        && (!YES_NO))
+                        /* snt_num() This function marks a sentence number to the word */
+                        print_snt_num (morph);
+                    else		/* checks fo r line no. , snt no., and o/p are there  */
+                    {
+                        WORD_NUM++;
+                        if (FOR_USER && !HORI_OUTPUT)	/* o/p is not there */
+                            printf ("@input_word@\n word_num: w%d\n", WORD_NUM);
+                        else
+                            /* if answer is not there and hori_output is not there */
+                            if (!HORI_OUTPUT && !YES_NO)
+                                printf ("input_word\nw%d\n", WORD_NUM);
+                        if ((morph[0] == '@') || (LINE_NUM_FLAG && end_mark (morph)))	/* morph= @ */
+                        {
+                            if (!HORI_OUTPUT)	/*checks for output not there */
+                                printf ("AVY\n%s\n", morph);	/* print the marked words as they are */
+                            else
+                                printf ("%s", morph);	/* print the marked words as they are */
+                        }
+                        else
+                        {
+                            /* This function checks the Unkown word is present in the UDictionary or not */
+                            chk_uword_dict(morph, uword_ar->sl_word, sizeof_uword,
+                                           sizeof (uword_ar[0]), strcmp,
+                                           uword_ans, DBM_FLAG, db_uword);
+                            /* checks for uword not null and uword_dict is there */
+                            if ((uword_ans[0] != '\0') && (UWORD_DICT))
+                                if (!HORI_OUTPUT && !YES_NO)	/* checks output and answer not there */
+                                    printf ("AVY\n%s\n", uword_ans);
+                                else if (YES_NO)	/* if answer is there */
+                                    printf ("%s", morph);
+                                else	/* if answer is not there */
+                                    printf ("%s", uword_ans);
+                            else
+                            {
+                                /* This function is the main functuon. It extracts suffixes and calls different routines for
+                                   analysis */
+                                sprintf(log_messg, "INFO: Calling fun_morph() for the word |%s|", morph); PRINT_LOG(log_file, log_messg);
+                                fun_morph (morph, swit1, fpt1, fp_pdgm, DBM_FLAG, db_dict, db_suff, ans_ar);
+                                loop1=0;
+                                //[ESC] This is creating segmentation fault on big files
+                                //sprintf(log_messg, "INFO: fun_morph() returned |%d|%s|%d|%s|", loop1, ans_ar[loop1].root, ans_ar[var].offset, ans_ar[var].pdgm); PRINT_LOG(log_file, log_messg);
 
-					  if (ans_ar[loop1].offset == -1) {	/* checks for offset is not eual to -1 */
-					    if (!HORI_OUTPUT) {	/* if output not there */
-					      printf ("avy\n%s\n", ans_ar[loop1].root);
-							sprintf(feature_str, "<fs af='%s,avy,,,,,,'>", ans_ar[loop1].root);
-					    } else {
-					      printf ("%s{avy}", ans_ar[loop1].root);
-							sprintf(feature_str, "<fs af='%s,avy,,,,,,'>", ans_ar[loop1].root);
-						  }
-					  } else if (ans_ar[loop1].offset == -3) {	/* Case of Numeral */
-					    if (!HORI_OUTPUT) {	/* if output not there */
-					      printf ("avy\n%s\n", ans_ar[loop1].root);
-					    } else {	/* if answer is there */
-						sprintf(log_messg, "INFO: NUMERALS, SPECIAL, & PUNCTUATIONS |%s|", ans_ar[loop1].root); PRINT_LOG(log_file, log_messg);
+                                /* if offest is equal to -2 for UNKNOWN Word*/
+                                if (ans_ar[0].offset == -2)	{
+                                    if (YES_NO)	/* checks for ajFAwa */
+                                        printf ("%s<ajFAwa>", morph);
+                                    get_spell_variation(morph,morph_spell_variation,word_count);
+                                    flag_uword=1;
+                                    for(loop1=0;loop1<=word_count;loop1++) {
+                                        fun_morph(morph_spell_variation[loop1],swit1,fpt1,fp_pdgm,
+                                                  DBM_FLAG,db_dict,db_suff,ans_ar);
+                                        prnt_spell_variation(YES_NO, HORI_OUTPUT, morph, morph_spell_variation[loop1],ans_ar,
+                                                             feature_str);
+                                        if(ans_ar[0].offset != -2) {
+                                            flag_uword=0;
+                                        }
+                                    }
+                                    sprintf(final_feature_struct, "%s", feature_str);
 
-						if (ispunct(ans_ar[loop1].root[0])) {
-							if(ans_ar[loop1].root[0]==',')
-								sprintf(feature_str, "<fs af='&comma,punc,,,,,,'>");
-							else if(ans_ar[loop1].root[0]=='/')
-								sprintf(feature_str, "<fs af='&slash,punc,,,,,,'>");
-							else
-							sprintf(feature_str, "<fs af='%c,punc,,,,,,'>", ans_ar[loop1].root[0]);
-						} else { 
-							sprintf(feature_str, "<fs af='%s,num,,,,,,'>", ans_ar[loop1].root);
-						 }
-						sprintf(log_messg, "INFO: NUMERALS, SPECIAL, & PUNCTUATIONS |%s|", ans_ar[loop1].root); PRINT_LOG(log_file, log_messg);
-						  }
-					  } else if (HORI_OUTPUT) {
-					      /* This function prints the output in horizontal way for the given input word */
-					      char root[BigArray],
-						cat[BigArray], g[BigArray],
-						n[BigArray], p[BigArray],
-						kase[BigArray],
-						cm[BigArray], tam[BigArray],p_tem[BigArray],emph[SmallArray],gen1[BigArray],num1[BigArray],cas1[SmallArray];
+                                    if ((swit1 == 0) && (flag_uword))
+                                    {
 
-						sprintf(log_messg, "INFO: Calling resufun_hori(),|root=%s|cat=%s|gender=%s|number=%s|person=%s|case=%s|cm=%s|suff=%s|", root, cat, g, n, p, kase, cm, tam); PRINT_LOG(log_file, log_messg);
+                                        if ((fp_excepword_dict = fopen (ename, "r")) == NULL)    {
+                                            sprintf(log_messg, "ERROR in opening exception_words file |%s| please specify the correct path", ename);
+                                            PRINT_ERR(log_file, log_messg);
+                                            exit (errno);
+                                        } else {
+                                            sprintf(log_messg, "exception_words file |%s| opened Sucessfully", ename);
+                                            PRINT_LOG(log_file, log_messg);
+                                        }
 
-						/* Initalize the variables so that they donot carry the last values*/
-						memset(g, '\0', sizeof(g));
-						memset(n, '\0', sizeof(n));
-						memset(p, '\0', sizeof(p));
-						memset(kase, '\0', sizeof(kase));
-						memset(cm, '\0', sizeof(cm));
-						memset(tam, '\0', sizeof(tam));
-						memset(emph, '\0', sizeof(emph));
-						memset(gen1, '\0', sizeof(gen1));
-						memset(num1, '\0', sizeof(num1));
-						memset(cas1, '\0', sizeof(cas1));
+                                        fgetword(fp_excepword_dict,line,':');
+                                        while (strcmp (line, ""))       /* compares line with " " */
+                                        {
+                                            FLAG=0;
+                                            if(strcmp(line,morph)==0)
+                                            {
+                                                fgetword(fp_excepword_dict,line,':');
+                                                sprintf(final_feature_struct, "<fs %s>", line);
+                                                FLAG=1;
+                                                break;
+                                            }
+                                            else
+                                                fgetword(fp_excepword_dict,line,':');
+                                            fgetword(fp_excepword_dict,line,':');
+                                        }
+                                        if(FLAG==0)
+                                            sprintf(final_feature_struct, "<fs af='%s,unk,,,,,,'>", morph);
+                                    }
+                                }
 
-						resufun_hori(ans_ar[loop1].root, 
-								ans_ar[loop1].pdgm, 
-								ans_ar[loop1].offset, 
-								ans_ar[loop1].aux_verb, 
-								root, cat, g, n, p, kase, cm, 
-								tam, emph, gen1, num1, cas1);
+                                else	/* checks for morph is there */
+                                {
+                                    if (YES_NO)	/* checks for answer is true */
+                                        printf ("%s", morph);
+                                    else	/* if answer is not there */
+                                    {
+                                        loop1 = 0;
+                                        /* checks for offset is not eual to -2 */
+                                        while (ans_ar[loop1].offset != -2) {
+                                            sprintf(log_messg, "INFO: Reading Analysis for word |%s|, analysis#=%d", ans_ar[loop1].root, loop1); PRINT_LOG(log_file, log_messg);
 
-						//sprintf(log_messg, "INFO: resfun_hori returns|root=%s|cat=%s|gender=%s|number=%s|person=%s|case=%s|cm=%s|suff=%s|emph=%s|gen1=%s|num1=%s|cas1=%s", root, cat, g, n, p, kase, cm, tam, emph, gen1, num1, cas1); PRINT_LOG(log_file, log_messg);
+                                            if (ans_ar[loop1].offset == -1) {	/* checks for offset is not eual to -1 */
+                                                if (!HORI_OUTPUT) {	/* if output not there */
+                                                    printf ("avy\n%s\n", ans_ar[loop1].root);
+                                                    sprintf(feature_str, "<fs af='%s,avy,,,,,,'>", ans_ar[loop1].root);
+                                                } else {
+                                                    printf ("%s{avy}", ans_ar[loop1].root);
+                                                    sprintf(feature_str, "<fs af='%s,avy,,,,,,'>", ans_ar[loop1].root);
+                                                }
+                                            } else if (ans_ar[loop1].offset == -3) {	/* Case of Numeral */
+                                                if (!HORI_OUTPUT) {	/* if output not there */
+                                                    printf ("avy\n%s\n", ans_ar[loop1].root);
+                                                } else {	/* if answer is there */
+                                                    sprintf(log_messg, "INFO: NUMERALS, SPECIAL, & PUNCTUATIONS |%s|", ans_ar[loop1].root); PRINT_LOG(log_file, log_messg);
 
-						if(!strcmp(cat,"sh_P")){
-							memset(cat, '\0', sizeof(cat));
-							strcat(cat,"pn");
-						}
-						else if(!strcmp(cat,"sh_n")){
-							memset(cat, '\0', sizeof(cat));
-							strcat(cat,"psp");
-						}
-						if(!strcmp(cat,"n")) {
-							if(!strcmp(p,"")){
-								strcpy(p,"3");
-							}
-						}	
-					
+                                                    if (ispunct(ans_ar[loop1].root[0])) {
+                                                        if(ans_ar[loop1].root[0]==',')
+                                                            sprintf(feature_str, "<fs af='&comma,punc,,,,,,'>");
+                                                        else if(ans_ar[loop1].root[0]=='/')
+                                                            sprintf(feature_str, "<fs af='&slash,punc,,,,,,'>");
+                                                        else
+                                                            sprintf(feature_str, "<fs af='%c,punc,,,,,,'>", ans_ar[loop1].root[0]);
+                                                    } else {
+                                                        sprintf(feature_str, "<fs af='%s,num,,,,,,'>", ans_ar[loop1].root);
+                                                    }
+                                                    sprintf(log_messg, "INFO: NUMERALS, SPECIAL, & PUNCTUATIONS |%s|", ans_ar[loop1].root); PRINT_LOG(log_file, log_messg);
+                                                }
+                                            } else if (HORI_OUTPUT) {
+                                                /* This function prints the output in horizontal way for the given input word */
+                                                char root[BigArray],
+                                                     cat[BigArray], g[BigArray],
+                                                     n[BigArray], p[BigArray],
+                                                     kase[BigArray],
+                                                     cm[BigArray], tam[BigArray],p_tem[BigArray],emph[SmallArray],gen1[BigArray],num1[BigArray],cas1[SmallArray];
 
-					//This block of code is introduced to make separate key value pair for the honorophic cases and '2h','3h' are not valid values for the person so that they are converted into '2' and '3' correspondingly 
-					if( (!strcmp(p,"2h") || (!strcmp(p,"3h"))) && ((!strcmp(gen1,"m"))||(!strcmp(gen1,"f")) )) {
-						p_tem[0]=p[0];p_tem[1]='\0';
-					sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' agr_gen=\'%s\' agr_num=\'%s\' agr_cas=\'%s\' hon=\'y\'>", root, cat, g, n, p_tem, kase, cm, tam, gen1, num1,cas1);
-                			}
-					else if( (!strcmp(p,"2h") || (!strcmp(p,"3h"))) && ((!strcmp(emph,"y")) )) {
-						p_tem[0]=p[0];p_tem[1]='\0';
-					sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' emph=\'%s\' hon=\'y\'>", root, cat, g, n, p_tem, kase, cm, tam, emph);
-                			}
-                                        else if(!strcmp(p,"2h") || !strcmp(p,"3h")){
-						p_tem[0]=p[0];p_tem[1]='\0';
-						sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' hon='y'>", root, cat, g, n, p_tem, kase, cm, tam);
-					}
-					else if( (!strcmp(emph,"y")) && ((!strcmp(gen1,"m"))||(!strcmp(gen1,"f")) )) {
-					sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' emph=\'%s\' agr_gen=\'%s\' agr_num=\'%s\' agr_cas=\'%s\'>", root, cat, g, n, p, kase, cm, tam, emph, gen1, num1,cas1);
-                			}
-					else if( (!strcmp(gen1,"m"))||(!strcmp(gen1,"f")) ) {
-					sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' agr_gen=\'%s\' agr_num=\'%s\' agr_cas=\'%s\'>", root, cat, g, n, p, kase, cm, tam, gen1, num1, cas1);
-                			}
-					else if(!strcmp(emph,"y")) {
-					sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' emph=\'%s\'>", root, cat, g, n, p, kase, cm, tam, emph);
-                			}
-					else {
-						sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s'>", root, cat, g, n, p, kase, cm, tam);
-					}
-					
-					/*if(!strcmp(gen1,"m") || !strcmp(gen1,"f") ) {
-					sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' gen1=\'%s\' num1=\'%s\'>", root, cat, g, n, p, kase, cm, tam, gen1,num1);
-                			}*/
+                                                sprintf(log_messg, "INFO: Calling resufun_hori(),|root=%s|cat=%s|gender=%s|number=%s|person=%s|case=%s|cm=%s|suff=%s|", root, cat, g, n, p, kase, cm, tam); PRINT_LOG(log_file, log_messg);
+
+                                                /* Initalize the variables so that they donot carry the last values*/
+                                                memset(g, '\0', sizeof(g));
+                                                memset(n, '\0', sizeof(n));
+                                                memset(p, '\0', sizeof(p));
+                                                memset(kase, '\0', sizeof(kase));
+                                                memset(cm, '\0', sizeof(cm));
+                                                memset(tam, '\0', sizeof(tam));
+                                                memset(emph, '\0', sizeof(emph));
+                                                memset(gen1, '\0', sizeof(gen1));
+                                                memset(num1, '\0', sizeof(num1));
+                                                memset(cas1, '\0', sizeof(cas1));
+
+                                                resufun_hori(ans_ar[loop1].root,
+                                                             ans_ar[loop1].pdgm,
+                                                             ans_ar[loop1].offset,
+                                                             ans_ar[loop1].aux_verb,
+                                                             root, cat, g, n, p, kase, cm,
+                                                             tam, emph, gen1, num1, cas1);
+
+                                                //sprintf(log_messg, "INFO: resfun_hori returns|root=%s|cat=%s|gender=%s|number=%s|person=%s|case=%s|cm=%s|suff=%s|emph=%s|gen1=%s|num1=%s|cas1=%s", root, cat, g, n, p, kase, cm, tam, emph, gen1, num1, cas1); PRINT_LOG(log_file, log_messg);
+
+                                                if(!strcmp(cat,"sh_P")){
+                                                    memset(cat, '\0', sizeof(cat));
+                                                    strcat(cat,"pn");
+                                                }
+                                                else if(!strcmp(cat,"sh_n")){
+                                                    memset(cat, '\0', sizeof(cat));
+                                                    strcat(cat,"psp");
+                                                }
+                                                if(!strcmp(cat,"n")) {
+                                                    if(!strcmp(p,"")){
+                                                        strcpy(p,"3");
+                                                    }
+                                                }
 
 
-					}
+                                                //This block of code is introduced to make separate key value pair for the honorophic cases and '2h','3h' are not valid values for the person so that they are converted into '2' and '3' correspondingly
+                                                if( (!strcmp(p,"2h") || (!strcmp(p,"3h"))) && ((!strcmp(gen1,"m"))||(!strcmp(gen1,"f")) )) {
+                                                    p_tem[0]=p[0];p_tem[1]='\0';
+                                                    sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' agr_gen=\'%s\' agr_num=\'%s\' agr_cas=\'%s\' hon=\'y\'>", root, cat, g, n, p_tem, kase, cm, tam, gen1, num1,cas1);
+                                                }
+                                                else if( (!strcmp(p,"2h") || (!strcmp(p,"3h"))) && ((!strcmp(emph,"y")) )) {
+                                                    p_tem[0]=p[0];p_tem[1]='\0';
+                                                    sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' emph=\'%s\' hon=\'y\'>", root, cat, g, n, p_tem, kase, cm, tam, emph);
+                                                }
+                                                else if(!strcmp(p,"2h") || !strcmp(p,"3h")){
+                                                    p_tem[0]=p[0];p_tem[1]='\0';
+                                                    sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' hon='y'>", root, cat, g, n, p_tem, kase, cm, tam);
+                                                }
+                                                else if( (!strcmp(emph,"y")) && ((!strcmp(gen1,"m"))||(!strcmp(gen1,"f")) )) {
+                                                    sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' emph=\'%s\' agr_gen=\'%s\' agr_num=\'%s\' agr_cas=\'%s\'>", root, cat, g, n, p, kase, cm, tam, emph, gen1, num1,cas1);
+                                                }
+                                                else if( (!strcmp(gen1,"m"))||(!strcmp(gen1,"f")) ) {
+                                                    sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' agr_gen=\'%s\' agr_num=\'%s\' agr_cas=\'%s\'>", root, cat, g, n, p, kase, cm, tam, gen1, num1, cas1);
+                                                }
+                                                else if(!strcmp(emph,"y")) {
+                                                    sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' emph=\'%s\'>", root, cat, g, n, p, kase, cm, tam, emph);
+                                                }
+                                                else {
+                                                    sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s'>", root, cat, g, n, p, kase, cm, tam);
+                                                }
 
-					  strcpy (ans_ar[loop1].root, "");
-					  ans_ar[loop1].offset = 0;
-					  strcpy (ans_ar[loop1].aux_verb, "");
-					  strcpy (ans_ar[loop1].pdgm, "");
+                                                /*if(!strcmp(gen1,"m") || !strcmp(gen1,"f") ) {
+                                                  sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s' gen1=\'%s\' num1=\'%s\'>", root, cat, g, n, p, kase, cm, tam, gen1,num1);
+                                                  }*/
 
-					  if (loop1 == 0) {
-						sprintf(final_feature_struct, "%s", feature_str);
-					  } else {
-						sprintf(final_feature_struct, "%s|%s", final_feature_struct, feature_str);	
-					  }
-						sprintf(log_messg, "lopp1 is |%d| and FS=%s", loop1, final_feature_struct); PRINT_LOG(log_file, log_messg);
-					  loop1++;
-					}
-				    }
-				}
-			    }
-			}
-		    }
-		  if ((c == '.') || (c == '?'))	/* if for c is equal to '.' '?' */ {
-		      WORD_NUM++;
-		      if (!HORI_OUTPUT && !YES_NO)	/* This function prints the output in horizontal way for the given input word */
-			printf ("input_word\nw%d\nAVY\n%c\n", WORD_NUM, c);
-		      else if (!YES_NO)
-		//	printf ("%c\n", c);
-			printf ("");
-		      else
-		//	printf ("%c", c);
-						sprintf(final_feature_struct, "<fs af='%s,punc,,,,,,'>",c);
-		      SENT_NUM++;
-						sprintf(final_feature_struct, "<fs af='%s,punc,,,,,,'>",c);
 
-		    }
+                                            }
 
-		}
-			sprintf(log_messg, "INFO: Input word is null"); PRINT_LOG(log_file, log_messg);
-	      		child->OR = read_or_node(final_feature_struct);
-			sprintf(log_messg, "INFO: YOU ARE HERE"); PRINT_LOG(log_file, log_messg);
-	    } /*no more childs to process */
-			
-		  //delete_node (get_nth_child(data_str, data_str->child_count - 1));
-		  //print_tree (data_str);
-		  print_tree_to_file(data_str, tmp_name);
-		  //fun_close (fpt1, fp_pdgm, swit1, DBM_FLAG, db_dict, db_suff);
-		  fun_close (fp_pdgm, swit1, DBM_FLAG, db_dict, db_suff);
+                                            strcpy (ans_ar[loop1].root, "");
+                                            ans_ar[loop1].offset = 0;
+                                            strcpy (ans_ar[loop1].aux_verb, "");
+                                            strcpy (ans_ar[loop1].pdgm, "");
 
-		sprintf(log_messg, "INFO: OUT of for"); PRINT_LOG(log_file, log_messg);
+                                            if (loop1 == 0) {
+                                                sprintf(final_feature_struct, "%s", feature_str);
+                                            } else {
+                                                sprintf(final_feature_struct, "%s|%s", final_feature_struct, feature_str);
+                                            }
+                                            sprintf(log_messg, "lopp1 is |%d| and FS=%s", loop1, final_feature_struct); PRINT_LOG(log_file, log_messg);
+                                            loop1++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if ((c == '.') || (c == '?'))	/* if for c is equal to '.' '?' */ {
+                        WORD_NUM++;
+                        if (!HORI_OUTPUT && !YES_NO)	/* This function prints the output in horizontal way for the given input word */
+                            printf ("input_word\nw%d\nAVY\n%c\n", WORD_NUM, c);
+                        else if (!YES_NO)
+                            //	printf ("%c\n", c);
+                            printf ("%s", "");
+                        else
+                            //	printf ("%c", c);
+                            sprintf(final_feature_struct, "<fs af='%c,punc,,,,,,'>",c);
+                        SENT_NUM++;
+                        sprintf(final_feature_struct, "<fs af='%c,punc,,,,,,'>",c);
+
+                    }
+
+                }
+                sprintf(log_messg, "INFO: Input word is null"); PRINT_LOG(log_file, log_messg);
+                child->OR = read_or_node(final_feature_struct);
+                sprintf(log_messg, "INFO: YOU ARE HERE"); PRINT_LOG(log_file, log_messg);
+            } /*no more childs to process */
+
+            //delete_node (get_nth_child(data_str, data_str->child_count - 1));
+            //print_tree (data_str);
+            print_tree_to_file(data_str, TCP_SERVER_FLAG ? tmp_name : oname);
+            //fun_close (fpt1, fp_pdgm, swit1, DBM_FLAG, db_dict, db_suff);
+            fun_close (fp_pdgm, swit1, DBM_FLAG, db_dict, db_suff);
+            //sprintf(log_messg, "INFO: OUT of for"); PRINT_LOG(log_file, log_messg);
+            if (TCP_SERVER_FLAG) {
                 fd = open(tmp_name, O_RDONLY);
-                morph_out_size = read(fd, mesg, 102400);
+                morph_out_size = read(fd, mesg, TCP_SERVER_MAX_BUFFER_SIZE);
                 sendto(connfd,mesg,morph_out_size,0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
                 unlink(tmp_name);
-		exit(0);
-	}
-	sprintf(log_messg, "INFO: OUT of else"); PRINT_LOG(log_file, log_messg);
-    }
+                exit(0);
+            }
+            //sprintf(log_messg, "INFO: OUT of else"); PRINT_LOG(log_file, log_messg);
+        }
+        sprintf(log_messg, "INFO: END OF WHILE"); PRINT_LOG(log_file, log_messg);
         close(connfd);
-	sprintf(log_messg, "INFO: END OF WHILE"); PRINT_LOG(log_file, log_messg);
-  }
+        if (!TCP_SERVER_FLAG)
+            break;
+    }
+    return 0;
 }

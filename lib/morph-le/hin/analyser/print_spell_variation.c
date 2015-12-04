@@ -28,19 +28,19 @@ extern char *log_messg;
 */
 
 extern void resufun();
+extern void resufun_hori();
 
+void prnt_spell_variation(YES_NO, HORI_OUTPUT, morph, morph_spell_variation, ans_ar, feature_str)
 int YES_NO;			/* answer is present or not */
 int HORI_OUTPUT;		/* horizontal output */
-char morph;			/* input word */
-
-void prnt_spell_variation(morph_spell_variation, ans_ar, feature_str)
+char morph[Morphsize];			/* input word */
 char morph_spell_variation[SmallArray];	/* speel variant word */
 struct ans_struct ans_ar[SmallArray];	/* object of structure ans_structr  which contains info
 					   of root,aux_verb,offset, paradigm */
 char feature_str[BiggerArray];
 {
 
-    int loop1, pipe_flag;
+    int loop1; //, pipe_flag;
     PRINT_LOG(log_file, "This is prnt_spell_variation()\n");
 
 
@@ -48,7 +48,7 @@ char feature_str[BiggerArray];
     char kase[BigArray] = {'\0'}, cm[BigArray] = {'\0'}, tam[BigArray] = {'\0'}; 
 
 
-    if (ans_ar[0].offset != -2)	/* checks for case ie direct or indirect */
+    if (ans_ar[0].offset != -2)	{ /* checks for case ie direct or indirect */
 
 	if (YES_NO)		/* if answer is there */
 		   printf("%s", morph);
@@ -74,10 +74,8 @@ char feature_str[BiggerArray];
 			//char root[BigArray], cat[BigArray], g[BigArray], n[BigArray], p[BigArray];
 			//char kase[BigArray], cm[BigArray], tam[BigArray]; 
 
-			resufun_hori(ans_ar[loop1].root, ans_ar[loop1].pdgm, ans_ar[loop1].offset, ans_ar[loop1].aux_verb, 
-						root, cat, g, n, p, kase, cm, tam);
+			resufun_hori(ans_ar[loop1].root, ans_ar[loop1].pdgm, ans_ar[loop1].offset, ans_ar[loop1].aux_verb, root, cat, g, n, p, kase, cm, tam);
 			sprintf(log_messg, "INFO: resfun_hori returns|%s|%s|%s|%s|%s|%s|%s|%s|", root, cat, g, n, p, kase, cm, tam); PRINT_LOG(log_file, log_messg);
-																																																		  
 			if (loop1 == 0) {
 				sprintf(feature_str, "<fs af='%s,%s,%s,%s,%s,%s,%s,%s'>", root, cat, g, n, p, kase, cm, tam);
 			} else {
@@ -96,5 +94,6 @@ char feature_str[BiggerArray];
 		loop1++;
 	    }
 	}
+    }
 	sprintf (log_messg, "INFO: going out of print_spell_variation()"); PRINT_LOG(log_file,log_messg);
 }
