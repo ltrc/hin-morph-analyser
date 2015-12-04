@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #define MED_STR 100
-getlines(s_ptr)
+void getlines(s_ptr)
 char *s_ptr;
 {
 /*   Collects the string from the stdin, into the string s_ptr */
@@ -9,7 +9,7 @@ char *s_ptr;
 	while((c = getchar()) != '\n' && c != EOF) *s_ptr++ = c;
 	*s_ptr = '\0';
 }
-fgetline(s_ptr,fp)
+void fgetline(s_ptr,fp)
 char *s_ptr;
 FILE *fp;
 {
@@ -18,7 +18,7 @@ FILE *fp;
 	while((c = getc(fp)) != '\n' && !feof(fp)) *s_ptr++ = c;
 	*s_ptr = '\0';
 }
-getnumber(s_ptr)
+void getnumber(s_ptr)
 int *s_ptr;
 {
 /*   Collects the number from the stdin, into s_ptr */
@@ -36,7 +36,7 @@ FILE *fp;
 	while ((c = getc(fp)) == ' ' || c == '\n' || c == '\t');
 	return(c);
 }
-chkint(fp)
+void chkint(fp)
 FILE *fp;
 {
 /* checks to see if the next char on the stream fp is an integer */
