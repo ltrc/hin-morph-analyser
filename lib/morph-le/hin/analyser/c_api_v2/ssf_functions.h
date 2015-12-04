@@ -31,7 +31,7 @@ char *get_fields (node *N )
 		str[0]='\0';
 	else
 	{
-		sprintf(str,"%s\t%s\t%s\0", N->node_tkn, N->node_tag, make_or_node_to_string(N->OR));
+		sprintf(str,"%s\t%s\t%s%s", N->node_tkn, N->node_tag, make_or_node_to_string(N->OR), "\0");
 	}
 	return str;
 }
