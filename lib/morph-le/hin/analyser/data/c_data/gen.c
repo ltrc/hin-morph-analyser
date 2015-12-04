@@ -9,23 +9,26 @@
 #include<unistd.h>
 #include "../c_data/defn.h"
 
-main(argc,argv)
+extern int getfileword();
+extern void fgetline();
+
+int main(argc,argv)
 int argc;
 char *argv[];
 {
-FILE *suff_fp,*fpt,*fpt_ce,*Fe_fp,*map_fp;
+FILE *fpt,*fpt_ce,*Fe_fp,*map_fp; //*suff_fp
 FILE *fpt_fe_va,*fpt_off;
 char word[WORD_SIZE],info[MAX_NO_OF_FICTITIOUS_CAT][WORD_SIZE],global_info[MAX_NO_OF_FICTITIOUS_CAT][WORD_SIZE];
 char info_class_rev[MAX_NO_OF_FICTITIOUS_CAT][WORD_SIZE],last_word_found[WORD_SIZE];
 char info_class[MAX_NO_OF_FICTITIOUS_CAT][WORD_SIZE],info_map[MAX_NO_OF_FICTITIOUS_CAT][WORD_SIZE];
 char category[WORD_SIZE],name[LINE_SIZE],word1[WORD_SIZE];
 int is_new_line,global,global_count,temp,info_count,count,no_count;
-int tcases,counter,i,j,k,m,found,init;
+int tcases,counter,i,m; //j,k,found,init;
 int const_no,no[MAX_NO_OF_FICTITIOUS_CAT],no_rev[MAX_NO_OF_FICTITIOUS_CAT];
 int offset,q;
 
 extern char *optarg;
-char *ca,*ce,*fe,*map;
+char *ca; //,*ce,*fe,*map;
 char capath[50],cepath[50],fepath[50],mappath[50],fpath[50]; 
 
 
@@ -56,14 +59,14 @@ void prtn();
                 break;
 /*option u for uword dict path*/
         case 'e':
-                ce=optarg;
+//                ce=optarg;
                 break;
 /* option d for dictpath*/
         case 'f':
-                fe=optarg;
+//                fe=optarg;
                 break;
 	case 'm':
-                map=optarg;
+//                map=optarg;
                 break;
 
 	default:
@@ -212,6 +215,7 @@ fclose(map_fp);
 fclose(fpt_ce);
 fclose(fpt_fe_va);
 fclose(fpt_off);
+return 0;
 }
 
 
