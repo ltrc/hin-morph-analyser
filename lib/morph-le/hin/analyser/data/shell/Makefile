@@ -9,11 +9,9 @@ data_dict:
 	./data_dict.sh
 
 clean:
-	rm -f ../../../../../data_bin/sl/morph/hin/*.c 
-	rm -f ../../../../../data_bin/sl/morph/hin/const.h 
-	rm -f ../../../../../data_bin/sl/morph/hin/dict_final 
-	rm -f ../../../../../data_bin/sl/morph/hin/pdgm_offset_info
-	rm -f ../../../../../data_bin/sl/morph/hin/suff
-	rm -f ../../../../../data_bin/sl/morph/hin/uword.dbm
-
-	
+	rm -f ../*.c
+	rm -f ../const.h
+	rm -f ../dict_final
+	rm -f ../pdgm_offset_info
+	rm -f ../suff
+	rm -f ../uword.dbm
