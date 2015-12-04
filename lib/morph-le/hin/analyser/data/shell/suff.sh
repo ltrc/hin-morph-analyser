@@ -1,6 +1,6 @@
 sort -T /tmp suff_info >sorted
 mv sorted suff_info
-gcc -g -o suff_add_ptr.out ../c_data/suff_add_ptr.c
+gcc -Wall -g -o suff_add_ptr.out ../c_data/suff_add_ptr.c
 ./suff_add_ptr.out
 mv pdgm_offset_info ../
 wc -l suff_info.c >junk1
