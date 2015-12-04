@@ -6,11 +6,11 @@
 #include <string.h>
 #include "../c_data/lext.h" 
 #include "../c_data/defn.h"
-main()   
+int main()
 {
 int i,j,k,ic,ir; 
 char ch[WORD_SIZE],rt[LINE_SIZE],cat_info[LINE_SIZE];
-char temp[WORD_SIZE],tempw[WORD_SIZE],tempr[WORD_SIZE],tempc[WORD_SIZE];
+char tempw[WORD_SIZE],tempr[WORD_SIZE],tempc[WORD_SIZE]; //,temp[WORD_SIZE];
 FILE *fpt1,*fpt2,*fopen(); 
  
 fpt2 = fopen("lex.c","w");
@@ -47,12 +47,13 @@ for (i = 0;i< totalf;++i)
                      		ic = k+1;
                    	else
                      		ic = k;
-         		if ((char *)strcmp(tempr,"\"NW\"") != NULL)
+                        if (strcmp(tempr,"\"NW\""))
                        		fprintf(fpt2,"%s,%s,\"%s\",\n",tempw,tempr,tempc);
 			 }
 		 }
   		fclose(fpt1);
 	 } 
   	fclose(fpt2);
+        return 0;
 } 
  
