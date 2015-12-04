@@ -10,14 +10,16 @@
 
 void search();
 int find();
+void reverse();
+extern int getfileword();
 
-main(argc,argv)
+int main(argc,argv)
 int argc;
 char *argv[];
 {
 FILE *tfile_fp,*fpt_suff,*fpt_off;
 char name[LINE_SIZE];
-int tcases,ind,counter,i,j,k,found,suff_size,init;
+int tcases,ind,counter,i,j,k,found,init; //,suff_size;
 int offset;
 char ch[LINE_SIZE],rt[LINE_SIZE],string1[LINE_SIZE],suffix[LINE_SIZE];
 char wa[WORD_SIZE];
@@ -76,12 +78,13 @@ while(!feof(tfile_fp))
 				found = 0;
 			for (j=i-k;j<=LINE_SIZE-1;++j)
  				string1[j] = '\0';
-			suff_size = find(string1,rt,suffix,wa);
+			//suff_size =
+                        find(string1,rt,suffix,wa);
 			fprintf(fpt_suff,"%s,%s,%s,",suffix,wa,rt);
-			if ((char *)strcmp(argv[1],"1")==NULL) 
+			if (!strcmp(argv[1],"1"))
 	   			fprintf(fpt_suff,",");
-			else 
-		 	if ((char *)strcmp(argv[1],"2") == NULL) 
+			else
+			if (!strcmp(argv[1],"2"))
 	   			fprintf(fpt_suff,"%s,",name);
 			fprintf(fpt_suff,"%d\n",offset+counter);
 			i = i + 1;
@@ -95,6 +98,7 @@ while(!feof(tfile_fp))
 fclose(tfile_fp);
 }
 fclose(fpt_suff);
+return 0;
 }
 
 
@@ -159,7 +163,7 @@ while ((!feof(fpt)) && !srch)
          }
  }
 
-reverse(s)
+void reverse(s)
 char *s;
 {
 int c,i,j;
