@@ -38,12 +38,12 @@ if((morph[i] < '0') || (morph[i] > '9')) { success = 0;break;}
 else  success = 0;
 return success;  //returns the value of success as 1
 }
-#define FUNCTION "end_mark()"
+//#define FUNCTION "end_mark()"
 int end_mark(morph)
 char morph[Morphsize];   /* morph word */
 {
 int success;
-char *program_name="snt_num.c";
+//char *program_name="snt_num.c";
 PRINT_LOG(log_file, "passing morph as argument\n");
 success = 0;
 if((morph[0] == '<') && (morph[2] == '>') && (morph[1] == '.'))
