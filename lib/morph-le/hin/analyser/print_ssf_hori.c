@@ -104,7 +104,7 @@ void resufun_hori(char *root,char *pdgm,int offset,char *aux_verb,char *root1,ch
 
     while (order[loop4].feature[loop5][0] != '\0') {
 	not_found = 1;
-	int i=0;
+	//int i=0;
 	for (loop3 = 0; (loop3 < no_of_features && not_found); loop3++) {
           sprintf(log_messg, "feature |feature_value |index:|%s %s %d", feature[loop3],feature_value[loop3],loop3); PRINT_LOG(log_file, log_messg);
 	    /* executes when order.feature not equal to tam or order.feature not equal to
@@ -152,7 +152,7 @@ void resufun_hori(char *root,char *pdgm,int offset,char *aux_verb,char *root1,ch
 			if(!strcmp(feature[loop3],"cas1"))
 			 strcpy(cas1,feature_value[loop3]); 
 	    if (not_found)
-		printf("");
+		printf("%s", "");
 	//struct order_info order[MAX_NO_OF_CAT];
 	//loop5++;
 	}
