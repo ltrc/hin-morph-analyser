@@ -14,7 +14,7 @@
 #include "struct1.h"
 #include "struct.h"
 #include "morph_logger.h"
-
+#include <stdio.h>
 extern char *program_name;
 extern char *log_file;
 extern char *log_messg;
@@ -23,7 +23,7 @@ extern char *log_messg;
 #define FUNCTION "cp_suff_add_struct()"
 
 
-cp_suff_add_struct(suff_add,ch_ar)
+void cp_suff_add_struct(suff_add,ch_ar)
 
 char suff_add[SUFFWORDSIZE];  		/* suffix word */
 char ch_ar[SUFFWORDSIZE];    		/* added to the root word */
