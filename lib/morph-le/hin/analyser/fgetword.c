@@ -19,7 +19,7 @@ extern char *program_name;
 extern FILE *log_file;
 #define FUNCTION "fgetword()"
 
-fgetword(fp,word,delimitor)
+void fgetword(fp,word,delimitor)
 
  FILE *fp;        	/* file pointer */
  char *word;      	/* char pointer to the morph word */
