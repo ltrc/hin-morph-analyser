@@ -10,6 +10,7 @@
  *  Return: void
 */
 
+#include <stdlib.h>
 
 #include "stdio.h"
 #include "string.h"
@@ -29,7 +30,7 @@ void suff_build_struct(word,ch_ar1,ch_ar2)
                                               and added data pointer and number of entries */ 
   {
     char  tmp[SmallArray];		 /* temp word */
-    int loop1,loop2,loop3,loop4;
+    int loop1,loop3,loop4; //,loop2;
     PRINT_LOG(log_file, "creating table containing suffix of the word, No of entries, word size and position of the word\n");
 
     loop1=0;
