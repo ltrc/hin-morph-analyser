@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include "../c_data/defn.h"
 
-main()
+int main()
 {
 FILE *fp1,*fp2,*fp3;
 char suff[SUFFWORDSIZE],add[LEXWORDSIZE],pdgm[LEXWORDSIZE],cat[CATEGORYWORDSIZE];
@@ -39,7 +39,7 @@ j=0;
              add[j]='\0';
       while(1)
       {
-       fprintf(fp3,"\"%s\",\"%s\",%d,",suff,add,ptr);
+       fprintf(fp3,"{\"%s\",\"%s\",%d,",suff,add,ptr);
        strcpy(suff_prv,suff);
        strcpy(add_prv,add);
        no_of_entries = 0;
@@ -81,7 +81,8 @@ for(i=0;(str[i]!=' '&&str[i]!=',');i++)
 if(feof(fp1)) break;
 }
 ptr = ftell(fp2);
-fprintf(fp3,"%d,\n",no_of_entries);
+fprintf(fp3,"%d},\n",no_of_entries);
 if(feof(fp1)) break;
 }
+return 0;
 }
