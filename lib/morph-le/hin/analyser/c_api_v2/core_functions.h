@@ -99,7 +99,7 @@ void read_ssf(node *tree, FILE *f)
 	
 	char str[1000];
 	char index[100];		//first coloumn of ssf (e.g  1.2.2)
-	int flag=-1 ;
+	//int flag=-1 ;
 	char ch ;
 	
 	
@@ -500,10 +500,10 @@ void print_node(node *tree ,char ind[])
 	char *node_fs=  make_or_node_to_string(tree->OR);
 	printf("%s\t%s\t%s\t%s\n",ind, tree->node_tkn, tree->node_tag, node_fs);
 	free(node_fs);
-	int i, n=0;
+	int n=0; // ,i;
 	char ind_tmp[100],ind_append[10];
 	node *tmp= (node *)g_list_nth_data(tree->childs,0);	
-	int len=strlen(ind);
+	//int len=strlen(ind);
 	GList *start=tree->childs;
 	while( tmp!=NULL )
 	{
@@ -563,10 +563,10 @@ void print_node_to_file(node *tree ,char ind[],FILE *f)
 	char *node_fs=  make_or_node_to_string(tree->OR);
 	fprintf(f, "%s\t%s\t%s\t%s\n",ind, tree->node_tkn, tree->node_tag, node_fs);
 	free(node_fs);
-	int i, n=0;
+	int n=0; //,i;
 	char ind_tmp[100],ind_append[10];
 	node *tmp= (node *)g_list_nth_data(tree->childs,0);
-	int len=strlen(ind);
+	//int len=strlen(ind);
 	GList *start=tree->childs;
 	while( tmp!=NULL )
 	{
