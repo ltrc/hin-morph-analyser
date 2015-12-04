@@ -1,4 +1,5 @@
 export LC_ALL=C
+sed -i -e 's/^{//' -e 's/},$/,/' jnk
 ./rpl_blank_0.pl < jnk > jnk1
 rm jnk
 mv jnk1 suff_info.c
