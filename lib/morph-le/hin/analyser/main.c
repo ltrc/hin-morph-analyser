@@ -482,6 +482,9 @@ main (argc, argv)
                 c = fun_read(morph, get_field(child, 1));
                 sprintf(log_messg, "INFO: Returned from fun_read(), c = |%d| count=%d|word=%s|\n", c, var, morph); PRINT_LOG(log_file, log_messg);
 
+                /* fun_read() is buggy. Copy the input word to morph anyway */
+                strcpy(morph, get_field(child, 1));
+
                 /* checks for morph is null or not */
                 if (strcmp(morph, "\0"))	{
                     sprintf(log_messg, "INFO: Input word is |%s|", morph); PRINT_LOG(log_file, log_messg);
