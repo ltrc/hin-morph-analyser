@@ -4,13 +4,6 @@
 
 char * myasctime(); // to generate time stamp, current time in string format
 
-/* print_log - logs the debug messages to the specified log file */
-void print_log(FILE *log_file, char *message, char *program_name, char *file_name, int line_no, char *function_name);
-
-/* print_err - logs the error messages to the log_file */
-void print_err(FILE *log_file, char *message, char *program_name);
-
-
 void print_log(FILE *log_file, char *message, char *program_name, char *file_name, int line_no, char *function_name)
 {
 	fprintf(log_file, "%s:%s[%d]:%s:%d:%s:%s\n", 
