@@ -11,12 +11,12 @@
  */
 
 /* HEADER FILES */
+#include <stdio.h>
 #include "struct1.h"
 #include "struct.h"
 #include "morph_logger.h"
-#include <stdio.h>
 extern char *program_name;
-extern char *log_file;
+extern FILE *log_file;
 extern char *log_messg;
 
 //#define FUNCTION "fun_close()"
