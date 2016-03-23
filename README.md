@@ -6,6 +6,15 @@ To compile, type:
 $ make -C analyser
 ```
 
+Usage:
+```bash
+$ ./analyser/morph_hin.exe --help
+*****USAGE*****
+--pdgmpath <pdgm_offset_info> --uwordpath <uword_dict_path>
+--dictpath <dict_path> --logfilepath <path of the log file> -ULDWH
+--inputfile <input_file_path> --outputfile <output_file_path> | --tcpserver <port_number>
+```
+
 Example run:
 ```bash
 $ ./analyser/morph_hin.exe --logfilepath ./morph.log --pdgmfilepath ./analyser/data/ --uwordpath ./analyser/data/dict_final --dictfilepath ./analyser/data/dict -ULDWH --inputfile ./tests/morph_test.in --outputfile /dev/stdout | head
