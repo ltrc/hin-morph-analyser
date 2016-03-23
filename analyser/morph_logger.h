@@ -4,30 +4,19 @@ void print_log(FILE *log_file, char *message, char *program_name, char *file_nam
 /* print_err - logs the error messages to the log_file */
 void print_err(FILE *log_file, char *message, char *program_name);
 
-#if 0
-	#define	PRINT_LOG(log_file, message) {	\
-					print_log(log_file, \
-							message,	\
-							program_name,	\
-							__FILE__, 	\
-							__LINE__,	\
-							__FUNCTION__);	\
-		}
+#define	PRINT_LOG(log_file, message) {	\
+    print_log(log_file, \
+              message,	\
+              program_name,	\
+              __FILE__,	\
+              __LINE__,	\
+              __FUNCTION__);	\
+}
 
 
 
-	#define	PRINT_ERR(log_file, message) {	\
-				print_err(log_file, 	\
-							message,	\
-							program_name);	\
-		}
-
-#endif
-
-#if 1
-	#define	PRINT_LOG(log_file, message) { }
-
-
-
-	#define	PRINT_ERR(log_file, message) { } 
-#endif
+#define	PRINT_ERR(log_file, message) {	\
+    print_err(log_file,	\
+              message,	\
+              program_name);	\
+}

@@ -6,6 +6,9 @@ char * myasctime(); // to generate time stamp, current time in string format
 
 void print_log(FILE *log_file, char *message, char *program_name, char *file_name, int line_no, char *function_name)
 {
+        if (!log_file)
+            return;
+
 	fprintf(log_file, "%s:%s[%d]:%s:%d:%s:%s\n", 
 						myasctime(), 
 						program_name, 
@@ -21,6 +24,8 @@ void print_log(FILE *log_file, char *message, char *program_name, char *file_nam
 
 void print_err(FILE *log_file, char *message, char *program_name)
 {
+        if (!log_file)
+            return;
 	fprintf(log_file, "%s %s[%d] %s\n", myasctime(), program_name, getpid(), message);
 	fflush(log_file);
 }
