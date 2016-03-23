@@ -160,11 +160,12 @@ main (argc, argv)
 	{"inputfile", required_argument, 0, 'i'},
 	{"outputfile", required_argument, 0, 'o'},
         {"tcpserver", required_argument, 0, 'x'},
+        {"help", no_argument, 0, 'h'},
 	{0, 0, 0, 0}
       };
       int option_index = 0;
 
-      k = getopt_long (argc, argv, "fpudioxUFPADLHWGY",
+      k = getopt_long (argc, argv, "fpudioxhUFPADLHWGY",
 		       long_options, &option_index);
       if (k == -1)
 	break;
@@ -254,9 +255,13 @@ main (argc, argv)
 	case 'Y':
 	  YES_NO = 1;
 	  break;
+        case 'h':
 	default:
-	  PRINT_LOG (log_file,
-		     "\n\t *****USAGE***** \n\t--pdgmpath <pdgm_offset_info> --uwordpath <uword_dict_path> --dictpath <dict_path> --logfilepath <path of the log file> -ULDWH");
+	  printf("*****USAGE*****\n"
+                 "--pdgmpath <pdgm_offset_info> --uwordpath <uword_dict_path> "
+                 "--dictpath <dict_path> --logfilepath <path of the log file> "
+                 "-ULDWH "
+                 "--inputfile <input_file_path> --outputfile <output_file_path> | --tcpserver <port_number>\n");
 	  exit (0);
 
 	  break;
