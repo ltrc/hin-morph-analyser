@@ -5,7 +5,7 @@ Install Dependencies (Debian Derivatives):
 ```bash
 sudo apt-get install gcc git libgdbm-dev libglib2.0-dev make 
 ```
-Install Dependencies (Debian Derivatives):
+Install Dependencies (Redhat Derivatives):
 ```bash
 sudo yum install git gcc gdbm-devel glib2-devel make 
 ```
